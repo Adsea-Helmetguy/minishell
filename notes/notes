@@ -1,0 +1,139 @@
+Rules
+1. Read from left to right one at a time, until an error
+2. Any > or >> will overwrite / create a file
+3. Any stdout from the cmd will go to the last file only
+4. Within a pipeline, < file has a higher priority on stdin than whats piped over
+5. The cmd will only be run after the entire pipeline has been read
+6. The next pipeline will run even if current pipeline fails
+7. Upon an error reading <, cmd wont run e.g. `ls < dne_file`
+8. The last < file or << has the highest priority as stdin for the cmd
+9. Heredoc strings needs to be expanded via dollar converter
+10. First TOKEN_NO_ARG/ARG is the cmd, subsequent ones are arguments
+11. Each time encountering <<, it will prompt user for input
+12. > and >> will run before CMD
+13. < and > will run consecutively until < errors
+14. Individual pipelines run simultaneously, previous pipeline errors does not stop current pipeline
+15. Syntax checking will start before any processing of components will be done
+
+Algorithm within a pipeline:
+1. Start from the first component
+2. Check current component
+2a. If it is >>, create a file if it doesnt exist, overwrite this to be stdout
+2b. If it is >, overwrite the file (create if doesnt exist), overwrite this to be stdout
+2c. If it is <<, prompt HEREDOC, overwrite this to be stdin
+2d. If it is <, open file. If does not exist, stop the pipeline and go to next pipe, overwrite this to be stdin
+2e. If it is arg, add to CMD linkedlist, or skip as there will be another funtion that returns char ** of all args
+3. Go on to the next component
+3a. If it is end of pipeline (pipe or all components), done
+3b. Repeat step 2-3
+4. From the CMD linkedlist, first item will be CMD, subsequent items will be args. If there are no CMD, do nothing
+5. Execute CMD, with items as args. 
+    First, check if it starts with a '/'. Run execve with this pathname.
+    Otherwise, check against builtins and run.
+    Otherwise, if does not exist, check $PATH and run execve with the obtained pathname.
+    Otherwise, If does not exist, error and move to next pipeline. 
+
+Appendix:
+2d. o3 does not exist
+keyu@c1r7s6:~/00_test$ < o3 | cat asdf
+bash: o3: No such file or directory
+cat: asdf: No such file or directory
+
+3. o1, o2 are existing files
+keyu@c1r7s6:~/00_test$ < o1 <o2 asdfasdf > o3 > o4
+asdfasdf: command not found
+keyu@c1r7s6:~/00_test$ ls
+o1  o2	o3  o4
+
+General: Nothing is executed (no file creation, no CMD execution) upon a syntax error
+keyu@c1r7s6:~/00_test$ >o3 hello > | echo world
+bash: syntax error near unexpected token `|'
+keyu@c1r7s6:~/00_test$ ls
+
+zsh:
+---
+$ echo hello2 | cat outfile3 > output 
+
+outfile3:
+outfile3 hello
+
+output:
+outfile3 hello
+---
+
+$ echo hello2 | cat < outfile3 > output
+
+output:
+hello2
+outfile3 hello
+---
+
+$ echo hello2 | <outfile3 <outfile2 cat > output
+
+hello2
+outfile3 hello
+outfile2 hello
+---
+
+$ echo hello2 | <outfile3 <outfile2 cat <outfile1 > output
+
+hello2
+outfile3 hello
+outfile2 hello
+outfile1 hello
+---
+
+
+
+--- Me:
+hi chatgpt i have this command: ./script.sh | tr a-z A-Z | tr A-Z a-z
+and script 
+
+#!/bin/bash
+
+counter=0
+while [ $counter -lt 5 ]; do
+    echo "Hello, world!"
+    sleep 1
+    ((counter++))
+done
+
+that prints every 1s for 5s.
+however, i am only receiving the lowercase output on terminal after 5 seconds immediately, rather than periodically every 1s. why does that happen?
+--- ChatGPT:
+The behavior you are observing is due to the way buffering works in Unix-like systems. By default, when the output of a program is piped to another program, the output is buffered. This means that the output is collected in a buffer and then sent to the next stage of the pipeline in larger chunks, rather than being sent immediately line-by-line.
+
+In your case, the `echo "Hello, world!"` command inside your script is buffered when it's piped to `tr a-z A-Z | tr A-Z a-z`, causing the entire output to be sent to the terminal only after the script has completed execution.
+
+To see the output immediately every second, you can disable the buffering by using the `stdbuf` command. `stdbuf` allows you to modify the buffering operations of the command it wraps. You can adjust the buffering settings to make `echo` output lines immediately.
+
+Here's how you can modify your command to achieve this:
+
+```bash
+./script.sh | stdbuf -oL tr a-z A-Z | stdbuf -oL tr A-Z a-z
+```
+
+In this case, `-oL` option to `stdbuf` sets the standard output to be line-buffered.
+
+Alternatively, you can modify your script to flush the output buffer explicitly after each echo command:
+
+```bash
+#!/bin/bash
+
+counter=0
+while [ $counter -lt 5 ]; do
+    echo "Hello, world!"
+    sleep 1
+    ((counter++))
+done | while read line; do
+    echo "$line"
+done
+```
+
+This way, the inner loop will read and immediately print each line as it becomes available, bypassing the default buffering behavior.
+
+By using either of these methods, you should be able to see the output "Hello, world!" every second, rather than all at once after the script completes.
+---
+https://unix.stackexchange.com/questions/192995/what-are-practical-uses-of-stdbuf-or-nohup
+https://www.pixelbeat.org/programming/stdio_buffering/
+---

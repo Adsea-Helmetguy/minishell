@@ -1,0 +1,19 @@
+bash
+
+$ echo hello "" world
+> hello  world
+
+$ echo hello $asdf world
+> hello world
+
+$
+> 
+
+$ ''
+> command not found
+
+$ ""
+> command not found
+
+$ $asdf
+> 

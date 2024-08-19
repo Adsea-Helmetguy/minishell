@@ -1,0 +1,22 @@
+
+export "x=y" -> will have expansion
+export 'x=y' -> will not have expansion
+export "$VAR" -> invalid identifier
+
+
+parsing:
+- no expansion between ''
+- expansion between ""
+- separate items between =
+
+
+problem:
+- need to know when needs to be expanded -> return as different tokens depending on type
+- need to know when two tokens are together without space separating
+
+string = "echo -n \"my world is $USER 'yes $USER'\"'$USER' | xargs 'ignore $USER'>>ou>t>>p|ut $PATH 'lols'>|<"
+# string = f"echo -n 'ignore $USER' \"account $USER\""
+# string = f"echo $USER\"$USER\""
+# string = f"export \"name=hello\""
+# string = "export name=marcus'mar hen'chicken Yue"
+# string = "hello'world'"

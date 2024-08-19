@@ -1,0 +1,6 @@
+SSH requirement:
+1)
+ssh-add $HOME/.ssh/gitlab_rsa
+then:
+2)
+git clone --branch Marcus_branch git@gitlab.com:yyhkevin/minishell.git
