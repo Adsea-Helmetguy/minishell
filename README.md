@@ -35,13 +35,13 @@ unless u type exactly the same words "cat" You can keep typing forever.
 
 
 
-
+____________________________________________________________________________________
 Environment variables such as $USER or $VAR that updates and expand to their values.
-
+____________________________________________________________________________________
 $? expands to the exit status of the most recently executed foreground pipeline.
 E.g: If u exit with ctrl+C the signal should show the value 130 when you wrote:
 "echo $?"
-
+____________________________________________________________________________________
 
 
 
